@@ -50,8 +50,7 @@ One-time singleton initialization;
         }
     }
 
-5.
-show dialog.
+5.show dialog.
 
 AlertDialog.Builder.
 AlertDialog dialog = builder.create();
