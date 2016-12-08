@@ -200,8 +200,7 @@ public class ContentManager {
     /**
      * Performs generation of content on an async task thread.
      */
-    private static class GenerateTask extends AsyncTask<Void, Integer, Integer>
-            implements ProgressUpdater {
+    private static class GenerateTask extends AsyncTask<Void, Integer, Integer> implements ProgressUpdater {
         // ----- accessed from UI thread -----
         private final Context mContext;
         private final AlertDialog mPrepDialog;
