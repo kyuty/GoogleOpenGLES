@@ -37,7 +37,7 @@ import java.nio.ByteBuffer;
  */
 public class MoviePlayer {
     private static final String TAG = MainActivity.TAG;
-    private static final boolean VERBOSE = false;
+    private static final boolean VERBOSE = true;
 
     // Declare this here to reduce allocations.
     private MediaCodec.BufferInfo mBufferInfo = new MediaCodec.BufferInfo();
@@ -473,6 +473,7 @@ public class MoviePlayer {
                 while (!mStopped) {
                     try {
                         mStopLock.wait();
+                        Log.d(TAG, "PlayTask thread wait");
                     } catch (InterruptedException ie) {
                         // discard
                     }
@@ -482,6 +483,7 @@ public class MoviePlayer {
 
         @Override
         public void run() {
+            Log.d(TAG, "PlayTask run()");
             try {
                 mPlayer.play();
             } catch (IOException ioe) {
@@ -491,6 +493,7 @@ public class MoviePlayer {
                 synchronized (mStopLock) {
                     mStopped = true;
                     mStopLock.notifyAll();
+                    Log.d(TAG, "PlayTask thread notifyAll");
                 }
 
                 // Send message through Handler so it runs on the right thread.

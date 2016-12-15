@@ -71,3 +71,32 @@ dialog.show();
         AlertDialog dialog = builder.create();
         dialog.show();
     }
+
+6.xml
+    android:fadeScrollbars="false"  
+    不淡出滚动条  
+    
+7.经常修改的变量，被不同线程访问的变量，置成volatile  
+
+    // May be set/read by different threads.
+    private volatile boolean mIsStopRequested;
+
+
+
+
+============================================================================================
+
+read sequence  
+
+1.MainActivity  
+2.ContentManager  
+3.WorkDialog  
+4.
+3.MoviePlayer  
+    视频的解析，用的MediaExtractor，MediaCodec。  
+    MediaCodec.releaseOutputBuffer方法会将buffer画在指定的Surface上。  
+    内部静态类PlayTask，implement Runnable。  
+    Object.wait()会将当前进程wait，直到调用Object.notify() or Object.notifyAll()  
+    Handle可以认为是一个线程。  
+4.
+
