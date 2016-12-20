@@ -26,22 +26,26 @@ import java.nio.ByteBuffer;
 public class GeneratedTexture {
     //private static final String TAG = GlUtil.TAG;
 
-    public enum Image { COARSE, FINE };
+    public enum GenImage { 
+        COARSE, // 粗
+        FINE    // 细
+    };
 
     // Basic colors, in little-endian RGBA.
     private static final int BLACK = 0x00000000;
     private static final int RED = 0x000000ff;
     private static final int GREEN = 0x0000ff00;
     private static final int BLUE = 0x00ff0000;
-    private static final int MAGENTA = RED | BLUE;
+    private static final int MAGENTA = RED | BLUE;          // 品红
     private static final int YELLOW = RED | GREEN;
-    private static final int CYAN = GREEN | BLUE;
+    private static final int CYAN = GREEN | BLUE;           // 青色
     private static final int WHITE = RED | GREEN | BLUE;
-    private static final int OPAQUE = (int) 0xff000000L;
-    private static final int HALF = (int) 0x80000000L;
-    private static final int LOW = (int) 0x40000000L;
-    private static final int TRANSP = 0;
+    private static final int OPAQUE = (int) 0xff000000L;    // 不透明度的
+    private static final int HALF = (int) 0x80000000L;      // 半透明的
+    private static final int LOW = (int) 0x40000000L;       // 低透明的
+    private static final int TRANSP = 0;                    // 透明的
 
+    // 格子
     private static final int GRID[] = new int[] {    // must be 16 elements
         OPAQUE|RED,     OPAQUE|YELLOW,  OPAQUE|GREEN,   OPAQUE|MAGENTA,
         OPAQUE|WHITE,   LOW|RED,        LOW|GREEN,      OPAQUE|YELLOW,
@@ -50,6 +54,7 @@ public class GeneratedTexture {
     };
 
     private static final int TEX_SIZE = 64;         // must be power of 2
+                                                    // width or height
     private static final int FORMAT = GLES20.GL_RGBA;
     private static final int BYTES_PER_PIXEL = 4;   // RGBA
 
@@ -66,7 +71,7 @@ public class GeneratedTexture {
      *
      * @return Handle to texture.
      */
-    public static int createTestTexture(Image which) {
+    public static int createTestTexture(GenImage which) {
         ByteBuffer buf;
         switch (which) {
             case COARSE:
@@ -96,6 +101,7 @@ public class GeneratedTexture {
      * @return A direct ByteBuffer with the 8888 RGBA data.
      */
     private static ByteBuffer generateCoarseData() {
+        // the per buf in [0-1].
         byte[] buf = new byte[TEX_SIZE * TEX_SIZE * BYTES_PER_PIXEL];
         final int scale = TEX_SIZE / 4;        // convert 64x64 --> 4x4
 

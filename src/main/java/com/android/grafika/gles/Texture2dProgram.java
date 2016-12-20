@@ -104,7 +104,7 @@ public class Texture2dProgram {
             "            vec4 texc = texture2D(sTexture, vTextureCoord + uTexOffset[i]);\n" +
             "            sum += texc * uKernel[i];\n" +
             "        }\n" +
-            "    sum += uColorAdjust;\n" +
+            "        sum += uColorAdjust;\n" +
             "    } else if (vTextureCoord.x > vTextureCoord.y + 0.005) {\n" +
             "        sum = texture2D(sTexture, vTextureCoord);\n" +
             "    } else {\n" +
@@ -257,10 +257,16 @@ public class Texture2dProgram {
      * Sets the size of the texture.  This is used to find adjacent texels when filtering.
      */
     public void setTexSize(int width, int height) {
+        // texture unit in shader.
+        // 纹理坐标的在xy方向的单位
         float rw = 1.0f / width;
         float rh = 1.0f / height;
 
         // Don't need to create a new array here, but it's syntactically convenient.
+        // the mTexOffset size is KERNEL_SIZE * 2
+        // 滤镜算法:当前纹理坐标和它周围的8个纹理坐标（一共是9个坐标）
+        //         将计算出的color与kernel数组（数组长度是9）一一相乘
+        // 代码位置在 FRAGMENT_SHADER_EXT_FILT shader的for循环里
         mTexOffset = new float[] {
             -rw, -rh,   0f, -rh,    rw, -rh,
             -rw, 0f,    0f, 0f,     rw, 0f,
@@ -326,6 +332,8 @@ public class Texture2dProgram {
         // Populate the convolution kernel, if present.
         if (muKernelLoc >= 0) {
             GLES20.glUniform1fv(muKernelLoc, KERNEL_SIZE, mKernel, 0);
+            // mTexOffset's length is KERNEL_SIZE * 2
+            // size is not KERNEL_SIZE * 2 !!!!!!
             GLES20.glUniform2fv(muTexOffsetLoc, KERNEL_SIZE, mTexOffset, 0);
             GLES20.glUniform1f(muColorAdjustLoc, mColorAdjust);
         }

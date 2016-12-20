@@ -443,8 +443,8 @@ public class HardwareScalerActivity extends Activity implements SurfaceHolder.Ca
             // Programs used for drawing onto the screen.
             mFlatProgram = new FlatShadedProgram();
             mTexProgram = new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_2D);
-            mCoarseTexture = GeneratedTexture.createTestTexture(GeneratedTexture.Image.COARSE);
-            mFineTexture = GeneratedTexture.createTestTexture(GeneratedTexture.Image.FINE);
+            mCoarseTexture = GeneratedTexture.createTestTexture(GeneratedTexture.GenImage.COARSE);
+            mFineTexture = GeneratedTexture.createTestTexture(GeneratedTexture.GenImage.FINE);
 
             // Set the background color.
             GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);

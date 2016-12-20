@@ -31,15 +31,18 @@ import java.nio.FloatBuffer;
 public class GlUtil {
     public static final String TAG = "Grafika";
 
+    private static final int SIZEOF_FLOAT;
+
     /** Identity matrix for general use.  Don't modify or life will get weird. */
     public static final float[] IDENTITY_MATRIX;
     static {
         IDENTITY_MATRIX = new float[16];
         Matrix.setIdentityM(IDENTITY_MATRIX, 0);
+        
+        SIZEOF_FLOAT = Float.SIZE / Byte.SIZE;
+
+        logVersionInfo();
     }
-
-    private static final int SIZEOF_FLOAT = 4;
-
 
     private GlUtil() {}     // do not instantiate
 
@@ -127,10 +130,10 @@ public class GlUtil {
     /**
      * Creates a texture from raw data.
      *
-     * @param data Image data, in a "direct" ByteBuffer.
+     * @param data GenImage data, in a "direct" ByteBuffer.
      * @param width Texture width, in pixels (not bytes).
      * @param height Texture height, in pixels.
-     * @param format Image data format (use constant appropriate for glTexImage2D(), e.g. GL_RGBA).
+     * @param format GenImage data format (use constant appropriate for glTexImage2D(), e.g. GL_RGBA).
      * @return Handle to texture.
      */
     public static int createImageTexture(ByteBuffer data, int width, int height, int format) {
@@ -146,10 +149,8 @@ public class GlUtil {
 
         // Configure min/mag filtering, i.e. what scaling method do we use if what we're rendering
         // is smaller or larger than the source image.
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER,
-                GLES20.GL_LINEAR);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER,
-                GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
         GlUtil.checkGlError("loadImageTexture");
 
         // Load the data from the buffer into the texture handle.
@@ -181,15 +182,13 @@ public class GlUtil {
         Log.i(TAG, "renderer: " + GLES20.glGetString(GLES20.GL_RENDERER));
         Log.i(TAG, "version : " + GLES20.glGetString(GLES20.GL_VERSION));
 
-        if (false) {
-            int[] values = new int[1];
-            GLES30.glGetIntegerv(GLES30.GL_MAJOR_VERSION, values, 0);
-            int majorVersion = values[0];
-            GLES30.glGetIntegerv(GLES30.GL_MINOR_VERSION, values, 0);
-            int minorVersion = values[0];
-            if (GLES30.glGetError() == GLES30.GL_NO_ERROR) {
-                Log.i(TAG, "iversion: " + majorVersion + "." + minorVersion);
-            }
+        int[] values = new int[1];
+        GLES30.glGetIntegerv(GLES30.GL_MAJOR_VERSION, values, 0);
+        int majorVersion = values[0];
+        GLES30.glGetIntegerv(GLES30.GL_MINOR_VERSION, values, 0);
+        int minorVersion = values[0];
+        if (GLES30.glGetError() == GLES30.GL_NO_ERROR) {
+            Log.i(TAG, "iversion: " + majorVersion + "." + minorVersion);
         }
     }
 }
