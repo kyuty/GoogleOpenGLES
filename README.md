@@ -310,6 +310,318 @@ FlatShadedProgram.java
             "    gl_FragColor = uColor;" +
             "}";
 
+11.
+GeneratedMovie.java
+
+MediaCodec.BufferInfo  
+MediaCodec  
+MediaMuxer  
+关于android media，不懂。  
+MovieEightRects.java MovieSliders.java  
+generateFrame方法
+
+12.
+MiscUitls.java
+
+    /**
+     * Obtains a list of files that live in the specified directory and match the glob pattern.
+     * dir是一个目录（文件夹）
+     * 该方法返回该文件夹里所有后缀是glob的fileName
+     */
+    public static String[] getFiles(File dir, String glob) {
+        Log.d(TAG, "getFiles() dir = " + dir + " glob = " + glob);
+        String regex = globToRegex(glob);
+        final Pattern pattern = Pattern.compile(regex);
+        Log.d(TAG, "getFiles() pattern = " + pattern.toString());
+        String[] result = dir.list(new FilenameFilter() {
+            @Override 
+            public boolean accept(File dir, String name) {
+                Log.d(TAG, "getFiles() accept. dir = " + dir + " name = " + name);
+                Matcher matcher = pattern.matcher(name);
+                return matcher.matches();
+            }
+        });
+        Arrays.sort(result);
+        
+        for (String str : result) {
+            Log.d(TAG, "getFiles() str = " + str);
+        }
+
+        return result;
+    }
+
+    /**
+     * Converts a filename globbing pattern to a regular expression.
+     * 后缀转成正则表达式
+     * <p>
+     * The regex is suitable for use by Matcher.matches(), which matches the entire string, so
+     * we don't specify leading '^' or trailing '$'.
+     */
+    private static String globToRegex(String glob) {
+        // Quick, overly-simplistic implementation -- just want to handle something simple
+        // like "*.mp4".
+        //
+        // See e.g. http://stackoverflow.com/questions/1247772/ for a more thorough treatment.
+        StringBuilder regex = new StringBuilder(glob.length());
+        //regex.append('^');
+        for (char ch : glob.toCharArray()) {
+            switch (ch) {
+                case '*':
+                    regex.append(".*");
+                    break;
+                case '?':
+                    regex.append('.');
+                    break;
+                case '.':
+                    regex.append("\\.");
+                    break;
+                default:
+                    regex.append(ch);
+                    break;
+            }
+        }
+        //regex.append('$');
+        Log.d(TAG, "globToRegex(). glob = " + glob + " regex = " + regex.toString());
+        return regex.toString();
+    }
+
+    /**
+     * Obtains the approximate refresh time, in nanoseconds, of the default display associated
+     * with the activity.
+     * <p>
+     * The actual refresh rate can vary slightly (e.g. 58-62fps on a 60fps device).
+     */
+    public static long getDisplayRefreshNsec(Activity activity) {
+        Display display = ((WindowManager)
+                activity.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+        double displayFps = display.getRefreshRate();
+        long refreshNs = Math.round(1000000000L / displayFps);
+        Log.d(TAG, "refresh rate is " + displayFps + " fps --> " + refreshNs + " ns");
+        return refreshNs;
+    }
+
+13.
+PlayMovieActivity.java
+
+13.1 使用TextureView播放视频
+13.2 TextureView.setSurfaceTextureListener
+     listener有几个回调：onSurfaceTextureAvailable，// There's a short delay 
+                                                // between the start of the activity and the initialization
+                                                // of the SurfaceTexture that backs the TextureView.
+                                                // 注意：Texture的init比Activity的init要慢
+                      onSurfaceTextureSizeChanged，
+                      onSurfaceTextureDestroyed，
+                      onSurfaceTextureUpdated
+13.3 
+Spinner 下拉框
+
+    // Populate file-selection spinner.
+    Spinner spinner = (Spinner) findViewById(R.id.playMovieFile_spinner);
+    // Need to create one of these fancy ArrayAdapter thingies, and specify the generic layout
+    // for the widget itself.
+    ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+            android.R.layout.simple_spinner_item, new String[]{"aaa", "bbb"});
+    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+    // Apply the adapter to the spinner.
+    spinner.setAdapter(adapter);
+    spinner.setOnItemSelectedListener(this);
+13.4 用TextureView播放视频的大致原理：
+        从TextureView通过getSurfaceTexture接口获取SurfaceTexture，
+        用SurfaceTexture new出Surface，// Surface surface = new Surface(st);
+        这样就得到了Surface，然后通过MediaExtractor，MediaCodec将视频画在Surface上。
+
+14.
+ContinuousCaptureActivity.java  
+
+14.1 是如何通过camera画在SurfaceView上的？  
+   1.获取SurfaceView，从SurfaceView上获取SurfaceHolder，给SurfaceHolder addCallback。  
+    
+      SurfaceView sv = (SurfaceView) findViewById(R.id.continuousCapture_surfaceView);
+      SurfaceHolder sh = sv.getHolder();
+      sh.addCallback(this);
+
+   2.SurfaceHolder的callback有四个方法。  
+     大致流程：gen一个textureId，用textureId new一个SurfaceTexture，
+     然后给camera setPreviewTexture(SurfaceTexture)。
+     然后每一帧draw的时候，需要拿SurfaceTexture.updateTexImage(),
+     这样textureId就对应到了当前的camera采集的texture。
+     然后拿着textureId画在布局里的SurfaceView里（通过EglCore, WindowSurface, FullFrameBlit）。
+     
+   
+    @Override   // SurfaceHolder.Callback
+    public void surfaceCreated(SurfaceHolder holder) {
+        Log.d(TAG, "surfaceCreated holder=" + holder);
+
+        // Set up everything that requires an EGL context.
+        //
+        // We had to wait until we had a surface because you can't make an EGL context current
+        // without one, and creating a temporary 1x1 pbuffer is a waste of time.
+        //
+        // The display surface that we use for the SurfaceView, and the encoder surface we
+        // use for video, use the same EGL context.
+        mEglCore = new EglCore(null, EglCore.FLAG_RECORDABLE);
+        mDisplaySurface = new WindowSurface(mEglCore, holder.getSurface(), false);
+        mDisplaySurface.makeCurrent();
+
+        mFullFrameBlit = new FullFrameRect(
+                new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
+        mTextureId = mFullFrameBlit.createTextureObject();
+        mCameraTexture = new SurfaceTexture(mTextureId);
+        mCameraTexture.setOnFrameAvailableListener(this);
+
+        Log.d(TAG, "starting camera preview");
+        try {
+            mCamera.setPreviewTexture(mCameraTexture);
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+        mCamera.startPreview();
+
+        updateControls();
+    }
+
+    @Override   // SurfaceHolder.Callback
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        Log.d(TAG, "surfaceChanged fmt=" + format + " size=" + width + "x" + height +
+                " holder=" + holder);
+    }
+
+    @Override   // SurfaceHolder.Callback
+    public void surfaceDestroyed(SurfaceHolder holder) {
+        Log.d(TAG, "surfaceDestroyed holder=" + holder);
+    }
+
+    @Override   // SurfaceTexture.OnFrameAvailableListener; runs on arbitrary thread
+    public void onFrameAvailable(SurfaceTexture surfaceTexture) {
+        //Log.d(TAG, "frame available");
+        mHandler.sendEmptyMessage(MainHandler.MSG_FRAME_AVAILABLE);
+    }
+
+    /**
+     * Draws a frame onto the SurfaceView and the encoder surface.
+     * <p>
+     * This will be called whenever we get a new preview frame from the camera.  This runs
+     * on the UI thread, which ordinarily isn't a great idea -- you really want heavy work
+     * to be on a different thread -- but we're really just throwing a few things at the GPU.
+     * The upside is that we don't have to worry about managing state changes between threads.
+     * <p>
+     * If there was a pending frame available notification when we shut down, we might get
+     * here after onPause().
+     */
+    private void drawFrame() {
+        //Log.d(TAG, "drawFrame");
+        if (mEglCore == null) {
+            Log.d(TAG, "Skipping drawFrame after shutdown");
+            return;
+        }
+
+        // Latch the next frame from the camera.
+        mDisplaySurface.makeCurrent();
+        mCameraTexture.updateTexImage();
+        mCameraTexture.getTransformMatrix(mTmpMatrix);
+
+        // Fill the SurfaceView with it.
+        SurfaceView sv = (SurfaceView) findViewById(R.id.continuousCapture_surfaceView);
+        int viewWidth = sv.getWidth();
+        int viewHeight = sv.getHeight();
+        GLES20.glViewport(0, 0, viewWidth, viewHeight);
+        mFullFrameBlit.drawFrame(mTextureId, mTmpMatrix);
+        drawExtra(mFrameNum, viewWidth, viewHeight);
+        mDisplaySurface.swapBuffers();
+
+        // Send it to the video encoder.
+        if (!mFileSaveInProgress) {
+            mEncoderSurface.makeCurrent();
+            GLES20.glViewport(0, 0, VIDEO_WIDTH, VIDEO_HEIGHT);
+            mFullFrameBlit.drawFrame(mTextureId, mTmpMatrix);
+            drawExtra(mFrameNum, VIDEO_WIDTH, VIDEO_HEIGHT);
+            mCircEncoder.frameAvailableSoon();
+            mEncoderSurface.setPresentationTime(mCameraTexture.getTimestamp());
+            mEncoderSurface.swapBuffers();
+        }
+
+        mFrameNum++;
+    }
+
+14.2 打开前置摄像机 （用到了CameraUtils.java）  
+
+    /**
+     * Opens a camera, and attempts to establish preview mode at the specified width and height.
+     * <p>
+     * Sets mCameraPreviewFps to the expected frame rate (which might actually be variable).
+     */
+    private void openCamera(int desiredWidth, int desiredHeight, int desiredFps) {
+        if (mCamera != null) {
+            throw new RuntimeException("camera already initialized");
+        }
+
+        Camera.CameraInfo info = new Camera.CameraInfo();
+
+        // Try to find a front-facing camera (e.g. for videoconferencing).
+        int numCameras = Camera.getNumberOfCameras();
+        for (int i = 0; i < numCameras; i++) {
+            Camera.getCameraInfo(i, info);
+            if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                mCamera = Camera.open(i);
+                break;
+            }
+        }
+        if (mCamera == null) {
+            Log.d(TAG, "No front-facing camera found; opening default");
+            mCamera = Camera.open();    // opens first back-facing camera
+        }
+        if (mCamera == null) {
+            throw new RuntimeException("Unable to open camera");
+        }
+
+        Camera.Parameters parms = mCamera.getParameters();
+
+        CameraUtils.choosePreviewSize(parms, desiredWidth, desiredHeight);
+
+        // Try to set the frame rate to a constant value.
+        mCameraPreviewThousandFps = CameraUtils.chooseFixedPreviewFps(parms, desiredFps * 1000);
+
+        // Give the camera a hint that we're recording video.  This can have a big
+        // impact on frame rate.
+        parms.setRecordingHint(true);
+
+        mCamera.setParameters(parms);
+
+        Camera.Size cameraPreviewSize = parms.getPreviewSize();
+        String previewFacts = cameraPreviewSize.width + "x" + cameraPreviewSize.height +
+                " @" + (mCameraPreviewThousandFps / 1000.0f) + "fps";
+        Log.i(TAG, "Camera config: " + previewFacts);
+
+        // Set the preview aspect ratio.
+        AspectFrameLayout layout = (AspectFrameLayout) findViewById(R.id.continuousCapture_afl);
+        layout.setAspectRatio((double) cameraPreviewSize.width / cameraPreviewSize.height);
+    }
+
+14.3 是如何存成video的？
+用到了CircularEncoder.java(内部类EncoderThread，用到了Android的Looper机制)  
+CircularEncoderBuffer.java  
+具体原理，不懂。  
+
+14.4 AspectFrameLayout.java  
+给FrameLayout设置aspect ratio，重载onMeasure。不懂。
+
+15.
+DoubleDecodeActivity.java  
+有一个static的内部类VideoBlob  
+有一个static的内部线程类PlayMovieThread  
+两个TextureView，两个VideoBlob对象，两个PlayMoviewThread，实现doubleDecode。  
+    1.将布局里的TextureView传到VideoBlob构造函数里。  
+    2.给TextureView 设置监听。  
+      在回调方法的onSurfaceTextureAvailable(SurfaceTexture st, int width, int height)方法中，  
+      将参数SurfaceTexture set给TextureView。（TextureView.setSurfaceTexture(SurfaceTexture)）  
+      用SurfaceTexture new出一个Surface，构造PlayMovieThread。PlayMovieThread画在Surface上。  
+
+SpeedControlCallback.java  PlayMovieThread.java 将视频解析并画在surface  
+
+16.
+
+
+
 ============================================================================================
 
 read sequence  
@@ -330,11 +642,16 @@ read sequence
 14.WindowSurface  
 15.FullFrameRect  
 16.GeneratedTexture  
-17.
-3.MoviePlayer  
+17.GeneratedMovie  
+18.MovieEightRects  
+19.MovieSliders  
+20.MoviePlayer  
     视频的解析，用的MediaExtractor，MediaCodec。  
     MediaCodec.releaseOutputBuffer方法会将buffer画在指定的Surface上。  
     内部静态类PlayTask，implement Runnable。  
     Object.wait()会将当前进程wait，直到调用Object.notify() or Object.notifyAll()  
     Handle可以认为是一个线程。  
+21.SpeedControlCallback  
+22.MiscUtils  
+23.
 

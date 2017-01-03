@@ -32,29 +32,40 @@ import java.util.regex.Pattern;
  * Some handy utilities.
  */
 public class MiscUtils {
-    private static final String TAG = MainActivity.TAG;
+    private static final String TAG = MainActivity.TAG + " MiscUtils";
 
     private MiscUtils() {}
 
     /**
      * Obtains a list of files that live in the specified directory and match the glob pattern.
+     * dir是一个目录（文件夹）
+     * 该方法返回该文件夹里所有后缀是glob的fileName
      */
     public static String[] getFiles(File dir, String glob) {
+        Log.d(TAG, "getFiles() dir = " + dir + " glob = " + glob);
         String regex = globToRegex(glob);
         final Pattern pattern = Pattern.compile(regex);
+        Log.d(TAG, "getFiles() pattern = " + pattern.toString());
         String[] result = dir.list(new FilenameFilter() {
-            @Override public boolean accept(File dir, String name) {
+            @Override 
+            public boolean accept(File dir, String name) {
+                Log.d(TAG, "getFiles() accept. dir = " + dir + " name = " + name);
                 Matcher matcher = pattern.matcher(name);
                 return matcher.matches();
             }
         });
         Arrays.sort(result);
+        
+        for (String str : result) {
+            Log.d(TAG, "getFiles() str = " + str);
+        }
 
         return result;
     }
 
     /**
      * Converts a filename globbing pattern to a regular expression.
+     * 后缀转成正则表达式
      * <p>
      * The regex is suitable for use by Matcher.matches(), which matches the entire string, so
      * we don't specify leading '^' or trailing '$'.
@@ -83,6 +94,7 @@ public class MiscUtils {
             }
         }
         //regex.append('$');
+        Log.d(TAG, "globToRegex(). glob = " + glob + " regex = " + regex.toString());
         return regex.toString();
     }
 

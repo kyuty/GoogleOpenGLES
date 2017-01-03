@@ -30,9 +30,9 @@ import java.nio.ByteBuffer;
  * Not thread-safe.
  */
 public class CircularEncoderBuffer {
-    private static final String TAG = MainActivity.TAG;
+    private static final String TAG = MainActivity.TAG + " CircularEncoderBuffer";
     private static final boolean EXTRA_DEBUG = true;
-    private static final boolean VERBOSE = false;
+    private static final boolean VERBOSE = true;
 
     // Raw data (e.g. AVC NAL units) held here.
     //

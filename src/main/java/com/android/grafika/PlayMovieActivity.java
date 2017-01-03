@@ -48,7 +48,7 @@ import java.io.IOException;
  */
 public class PlayMovieActivity extends Activity implements OnItemSelectedListener,
         TextureView.SurfaceTextureListener, MoviePlayer.PlayerFeedback {
-    private static final String TAG = MainActivity.TAG;
+    private static final String TAG = MainActivity.TAG + " PlayMovieActivity";
 
     private TextureView mTextureView;
     private String[] mMovieFiles;
@@ -122,6 +122,7 @@ public class PlayMovieActivity extends Activity implements OnItemSelectedListene
 
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture st) {
+        Log.d(TAG, "SurfaceTexture destroyed");
         mSurfaceTextureReady = false;
         // assume activity is pausing, so don't need to update controls
         return true;    // caller should release ST

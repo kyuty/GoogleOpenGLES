@@ -54,14 +54,14 @@ import java.lang.ref.WeakReference;
  */
 public class ContinuousCaptureActivity extends Activity implements SurfaceHolder.Callback,
         SurfaceTexture.OnFrameAvailableListener {
-    private static final String TAG = MainActivity.TAG;
+    private static final String TAG = MainActivity.TAG + " ContinuousCaptureActivity";
 
     private static final int VIDEO_WIDTH = 1280;  // dimensions for 720p video
     private static final int VIDEO_HEIGHT = 720;
     private static final int DESIRED_PREVIEW_FPS = 15;
 
     private EglCore mEglCore;
-    private WindowSurface mDisplaySurface;
+    private WindowSurface mDisplaySurface;  // 这个是用来display的
     private SurfaceTexture mCameraTexture;  // receives the output from the camera preview
     private FullFrameRect mFullFrameBlit;
     private final float[] mTmpMatrix = new float[16];
@@ -73,7 +73,7 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
 
     private File mOutputFile;
     private CircularEncoder mCircEncoder;
-    private WindowSurface mEncoderSurface;
+    private WindowSurface mEncoderSurface;  // 这个是用来encoder的
     private boolean mFileSaveInProgress;
 
     private MainHandler mHandler;
